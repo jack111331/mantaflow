@@ -210,7 +210,7 @@ void ParticlePainter::paintBasicSys() {
 			glBegin(GL_POINTS); 
 			for(int i=0; i<(int)bp->size(); i++) {
 				if (!bp->isActive(i)) continue;
-				Vec3 pos = (*bp)[i].pos; 
+				Vec3 pos = (*bp)[i].pos;
 				if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 				mMaxVal = std::max( pdi->get(i), mMaxVal );
 				Real val = pdi->get(i) * scale;
@@ -230,7 +230,7 @@ void ParticlePainter::paintBasicSys() {
 			glBegin(GL_POINTS); 
 			for(int i=0; i<(int)bp->size(); i++) {
 				if (!bp->isActive(i)) continue;
-				Vec3 pos = (*bp)[i].pos; 
+				Vec3 pos = (*bp)[i].pos;
 				if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 				Real val = pdi->get(i);
 				mMaxVal = std::max( val, mMaxVal );
@@ -249,13 +249,14 @@ void ParticlePainter::paintBasicSys() {
 
 			// particle vector data can be drawn in different ways...
 			mDisplayMode = mDisplayMode%3;
+            infoStr << "Current display mode: "<<mDisplayMode << "\n";
 
 			switch(mDisplayMode) {
 			case 0: // lines
 				glBegin(GL_LINES); 
 				for(int i=0; i<(int)bp->size(); i++) {
 					if (!bp->isActive(i)) continue;
-					Vec3 pos = (*bp)[i].pos; 
+					Vec3 pos = (*bp)[i].pos;
 					if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 					mMaxVal = std::max( norm(pdi->get(i)), mMaxVal );
 					Vec3 val = pdi->get(i) * scale;
@@ -273,7 +274,7 @@ void ParticlePainter::paintBasicSys() {
 				glBegin(GL_POINTS); 
 				for(int i=0; i<(int)bp->size(); i++) {
 					if (!bp->isActive(i)) continue;
-					Vec3 pos = (*bp)[i].pos; 
+					Vec3 pos = (*bp)[i].pos;
 					if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 					mMaxVal = std::max( norm(pdi->get(i)), mMaxVal );
 					Vec3 val = pdi->get(i) * scale;
