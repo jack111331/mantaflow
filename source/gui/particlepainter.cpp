@@ -19,6 +19,8 @@
 #include "vortexpart.h"
 #include "turbulencepart.h"
 
+#define PAINT_CONTROL_POINT_RADIUS
+
 using namespace std;
 
 namespace Manta {
@@ -330,12 +332,17 @@ void ParticlePainter::paintBasicSys() {
 
 	// otherwise draw center
 	if(!drewPoints) {
-		glPointSize(1.5);
+#ifdef PAINT_CONTROL_POINT_RADIUS
+        glPointSize(10.0);
+        glEnable(GL_DEPTH_TEST);
+#else
+        glPointSize(1.5);
+#endif
 		glBegin(GL_POINTS);
 
 		for(int i=0; i<(int)bp->size(); i++) {
 			Vec3 pos = (*bp)[i].pos;
-			if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
+//			if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 			
 			if(!bp->isActive(i) ) {
 				glColor3f(1.0, 0., 0.); // deleted, red

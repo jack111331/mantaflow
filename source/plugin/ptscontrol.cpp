@@ -15,11 +15,86 @@
 #include "mesh.h"
 #include "particle.h"
 #include "kernel.h"
+#include "shapes.h"
 
 const int PC_DEBUGLEVEL = 1;
 
 using namespace std;
 namespace Manta {
+
+//! sample a shape with particles, use reset to clear the particle buffer,
+//! and skipEmpty for a continuous inflow (in the latter case, only empty cells will
+//! be re-filled once they empty when calling sampleShapeWithParticles during
+//! the main loop).
+PYTHON() void sampleShapeSurfaceWithParticles(const Shape& shape, const FlagGrid& flags, BasicParticleSystem& parts,
+                                       const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false,
+                                       const LevelsetGrid *exclude=NULL)
+{
+    const bool is3D = flags.is3D();
+    const Real jlen = randomness / discretization;
+    const Vec3 disp (1.0 / discretization, 1.0 / discretization, 1.0/discretization);
+    RandomStream mRand(9832);
+
+    if(reset) {
+        parts.clear();
+        parts.doCompress();
+    }
+
+    FOR_IJK_BND(flags, 0) {
+        if ( flags.isObstacle(i,j,k) ) continue;
+        if ( refillEmpty && flags.isFluid(i,j,k) ) continue;
+        const Vec3 pos (i,j,k);
+        for (int dk=0; dk<(is3D ? discretization : 1); dk++)
+            for (int dj=0; dj<discretization; dj++)
+                for (int di=0; di<discretization; di++) {
+                    Vec3 subpos = pos + disp * Vec3(0.5+di, 0.5+dj, 0.5+dk);
+                    subpos += jlen * (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+                    if(!is3D) subpos[2] = 0.5;
+                    if(exclude && exclude->getInterpolated(subpos) <= 0.) continue;
+                    if(!shape.isNear(subpos)) continue;
+                    parts.addBuffered(subpos);
+                }
+    }
+
+    parts.insertBufferedParticles();
+}
+
+//! sample a shape with particles, use reset to clear the particle buffer,
+//! and skipEmpty for a continuous inflow (in the latter case, only empty cells will
+//! be re-filled once they empty when calling sampleShapeWithParticles during
+//! the main loop).
+PYTHON() void sampleShapeSurfaceWithOneParticle(const Shape& shape, const FlagGrid& flags, BasicParticleSystem& parts,
+                                              const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false,
+                                              const LevelsetGrid *exclude=NULL)
+{
+    const bool is3D = flags.is3D();
+    const Real jlen = randomness / discretization;
+    const Vec3 disp (1.0 / discretization, 1.0 / discretization, 1.0/discretization);
+    RandomStream mRand(9832);
+
+    if(reset) {
+        parts.clear();
+        parts.doCompress();
+    }
+
+    FOR_IJK_BND(flags, 0) {
+        if ( flags.isObstacle(i,j,k) ) continue;
+        if ( refillEmpty && flags.isFluid(i,j,k) ) continue;
+        const Vec3 pos (i,j,k);
+        for (int dk=0; dk<(is3D ? discretization : 1); dk++)
+        for (int dj=0; dj<discretization; dj++)
+        for (int di=0; di<discretization; di++) {
+            Vec3 subpos = pos + disp * Vec3(0.5+di, 0.5+dj, 0.5+dk);
+            subpos += jlen * (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+            if(!is3D) subpos[2] = 0.5;
+            if(exclude && exclude->getInterpolated(subpos) <= 0.) continue;
+            if(!shape.isNear(subpos)) continue;
+            parts.addBuffered(subpos);
+            parts.insertBufferedParticles();
+            return;
+        }
+    }
+}
 
 PYTHON() void sampleMeshWithParticles(Mesh& mesh, BasicParticleSystem& parts, const bool reset=false, const int particleFlag=-1) {
     if(reset) {
@@ -51,21 +126,32 @@ Real getLinearFallOff(Real d, Real h) {
     }
 }
 
+Real getNormalizedSpline(Real d, Real h) {
+    if(d < h) {
+        return 315.0 * pow(pow(h, 2.0) - pow(d, 2.0), 3.0) / (64.0*acos(-1)*pow(h, 9.0));
+    } else {
+        return 0;
+    }
+}
+
 KERNEL(pts)
 void KnGetParticleAttractionForceScaleFactor(const BasicParticleSystem& parts, const FlagGrid& flags, const Real radius, Real volume, ParticleDataImpl<Real>& target) {
     const Vec3& pos = parts.getPos(idx);
     Real totalInfl = 0.0;
     int r  = int(radius) + 1;
     int rZ = flags.is3D() ? r : 0;
+    int times = 0;
     for(int zj=pos[2]-rZ; zj<= pos[2]+rZ; zj++)
     for(int yj= pos[1]-r ; yj<= pos[1]+r ; yj++)
     for(int xj= pos[0]-r ; xj<= pos[0]+r ; xj++) {
-        if(flags.isFluid(xj, yj, zj)) {
-            totalInfl += volume * getLinearFallOff(norm(Vec3(xj, yj, zj) - pos), radius);
-//            debMsg("KnGetParticleAttractionForceScaleFactor linear fall off param=" << sqrt(normSquare(Vec3(xj, yj, zj) - pos)) << ", linear fall off=" << getLinearFallOff(sqrt(normSquare(Vec3(xj, yj, zj) - pos)), radius) << ", radius=" << radius << ", volume=" << volume.get(xj, yj, zj), PC_DEBUGLEVEL);
+        times++;
+        if(flags.isInBounds(Vec3i(xj,yj,zj)) && flags.isFluid(xj, yj, zj)) {
+            totalInfl += volume * getNormalizedSpline(norm(Vec3(xj, yj, zj) - pos), radius);
+//            debMsg("KnGetParticleAttractionForceScaleFactor linear fall off param=" << norm(Vec3(xj, yj, zj) - pos) << ", linear fall off=" << getNormalizedSpline(norm(Vec3(xj, yj, zj) - pos), radius) << ", totalInfl=" << totalInfl << ", times=" << times, PC_DEBUGLEVEL);
         }
     }
     target[idx] = 1.0-min(Real(1.0), totalInfl);
+//    debMsg("KnGetParticleAttractionForceScaleFactor idx=" << idx << ", totalInfluence=" << totalInfl, PC_DEBUGLEVEL);
 //    if(target[idx] > 0.0) {
 //        debMsg("KnGetParticleAttractionForceScaleFactor result=" << target[idx], PC_DEBUGLEVEL);
 //    }
@@ -76,14 +162,6 @@ PYTHON()
 void getParticleAttractionForceScaleFactor(const BasicParticleSystem& parts, const FlagGrid& flags, const Real radius, Real volume, ParticleDataImpl<Real>& target)
 {
     KnGetParticleAttractionForceScaleFactor(parts, flags, radius, volume, target);
-}
-
-Real getNormalizedSpline(Real d, Real h) {
-    if(d < h) {
-        return 315.0 * pow(pow(h, 2.0) - pow(d, 2.0), 3.0) / (64.0*acos(-1)*pow(h, 9.0));
-    } else {
-        return 0;
-    }
 }
 
 KERNEL()
@@ -113,11 +191,11 @@ void KnGetParticleAttractionForce(const BasicParticleSystem& parts, const Grid<i
             const Vec3 pos = parts[psrc].pos;
             Vec3 direction = pos - cellPos;
             Real distance = norm(direction);
-            Vec3 attractionForce = scaleFactor[psrc] * getNormalized(direction) * getNormalizedSpline(distance, radius) * flags.getParent()->getDt() / gridScale;
+            Vec3 attractionForce = scaleFactor[psrc] * getNormalized(direction) * getNormalizedSpline(distance, radius); //  * flags.getParent()->getDt() / gridScale
 
-            if(scaleFactor[psrc] * getNormalizedSpline(distance, radius) > 0.0) {
-                debMsg("KnGetParticleAttractionForce result=" << scaleFactor[psrc] * getNormalizedSpline(distance, radius) * flags.getParent()->getDt() / gridScale, PC_DEBUGLEVEL);
-            }
+//            if(scaleFactor[psrc] * getNormalizedSpline(distance, radius) > 0.0) {
+//                debMsg("KnGetParticleAttractionForce result=" << scaleFactor[psrc] * getNormalizedSpline(distance, radius) * flags.getParent()->getDt() / gridScale, PC_DEBUGLEVEL);
+//            }
             vel(i, j, k) += attractionForceStrength * attractionForce;
         }
     }

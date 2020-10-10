@@ -44,6 +44,7 @@ public:
 	
 	//! Inside test of the shape
 	virtual bool isInside(const Vec3& pos) const;
+    virtual bool isNear(const Vec3& pos) const;
 	inline bool isInsideGrid(int i, int j, int k) const { return isInside(Vec3(i+0.5,j+0.5,k+0.5)); };
 	
 	virtual void generateMesh(Mesh* mesh) {} ;    
@@ -59,6 +60,7 @@ public:
 	PYTHON() NullShape (FluidSolver* parent) : Shape(parent) {}
 	
 	virtual bool isInside(const Vec3& pos) const { return false; }
+    virtual bool isNear(const Vec3& pos) const { return false; }
 	virtual void generateMesh(Mesh* mesh) {}
 	
 protected:
@@ -77,6 +79,7 @@ public:
 	virtual Vec3 getCenter() const { return 0.5*(mP1+mP0); }
 	virtual Vec3 getExtent() const { return getSize(); }
 	virtual bool isInside(const Vec3& pos) const;
+    virtual bool isNear(const Vec3& pos) const;
 	virtual void generateMesh(Mesh* mesh);
 	virtual void generateLevelset(Grid<Real>& phi);
 	
@@ -94,6 +97,7 @@ public:
 	inline Real getRadius() const { return mRadius; }
 	virtual Vec3 getExtent() const { return Vec3(2.0*mRadius); }    
 	virtual bool isInside(const Vec3& pos) const;
+    virtual bool isNear(const Vec3& pos) const;
 	virtual void generateMesh(Mesh* mesh);
 	virtual void generateLevelset(Grid<Real>& phi);
 	
@@ -116,6 +120,7 @@ public:
 	inline Vec3 getZ() const { return mZ*mZDir; }
 	virtual Vec3 getExtent() const { return Vec3(2.0*sqrt(square(mZ)+square(mRadius))); }    
 	virtual bool isInside(const Vec3& pos) const;
+    virtual bool isNear(const Vec3& pos) const;
 	virtual void generateMesh(Mesh* mesh);
 	virtual void generateLevelset(Grid<Real>& phi);
 
@@ -141,6 +146,7 @@ public:
 	inline Real getmAnglexy() const { return mAnglexy; }
 	inline Real getmAngleyz() const { return mAngleyz; }
 	virtual bool isInside(const Vec3& pos) const;
+    virtual bool isNear(const Vec3& pos) const;
 	virtual void generateMesh(Mesh* mesh);
 	virtual void generateLevelset(Grid<Real>& phi);
 

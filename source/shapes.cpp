@@ -37,6 +37,10 @@ bool Shape::isInside(const Vec3& pos) const {
 	return false;
 }
 
+bool Shape::isNear(const Vec3& pos) const {
+    return false;
+}
+
 //! Kernel: Apply a shape to a grid, setting value inside
 KERNEL() template<class T> 
 void ApplyShapeToGrid (Grid<T>* grid, Shape* shape, T value, FlagGrid* respectFlags) {
@@ -153,6 +157,11 @@ bool Box::isInside(const Vec3& pos) const {
 			pos.x <= mP1.x && pos.y <= mP1.y && pos.z <= mP1.z);
 }
 
+bool Box::isNear(const Vec3& pos) const {
+    // TODO
+    return false;
+}
+
 void Box::generateMesh(Mesh* mesh) {
 	const int quadidx[24] = { 0,4,6,2, 3,7,5,1, 0,1,5,4, 6,7,3,2, 0,2,3,1, 5,7,6,4 };
 	const int nodebase = mesh->numNodes();
@@ -241,6 +250,11 @@ bool Sphere::isInside(const Vec3& pos) const {
 	return normSquare((pos - mCenter) / mScale) <= mRadius * mRadius;
 }
 
+bool Sphere::isNear(const Vec3& pos) const {
+    // FIXME parameter
+    return fabs(normSquare((pos - mCenter) / mScale) - mRadius * mRadius) <= 2.5;
+}
+
 struct Tri { Vec3 t[3]; int i[3]; Tri(Vec3 a,Vec3 b, Vec3 c) {t[0]=a;t[1]=b;t[2]=c;}};        
 void Sphere::generateMesh(Mesh* mesh) {
 	vector<Tri> tris;
@@ -326,6 +340,11 @@ bool Cylinder::isInside(const Vec3& pos) const {
 	if (fabs(z) > mZ) return false;
 	Real r2 = normSquare(pos-mCenter)-square(z);
 	return r2 < square(mRadius);
+}
+
+bool Cylinder::isNear(const Vec3& pos) const {
+    //useless
+    return false;
 }
 
 void Cylinder::generateMesh(Mesh* mesh) {
@@ -437,6 +456,11 @@ bool Slope::isInside(const Vec3& pos) const {
 	return ((n.x*(double)pos.x + n.y*(double)pos.y + n.z*(double)pos.z - mOrigin) / fac) <= 0.;
 
 
+}
+
+bool Slope::isNear(const Vec3& pos) const {
+// useless
+    return false;
 }
 
 KERNEL() void SlopeSDF(const Vec3 &n, Grid<Real> &phiObs, const Real &fac, const Real &origin) {

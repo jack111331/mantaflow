@@ -6,7 +6,7 @@ from manta import *
 # solver params
 dim = 3
 res = 64
-#res = 128
+# res = 128
 gs = Vec3(res,res,res)
 if (dim==2):
         gs.z=1
@@ -23,7 +23,7 @@ radiusFactor = 1.0
 # control params
 # TODO fill param
 mesh_sample_dist=1.0
-attr_force_strength=1.0
+attr_force_strength=2.0
 vel_force_strength=0.3
 volume=1.0
 
@@ -57,13 +57,19 @@ ppCScale = ppControl.create(PdataReal)
 bWidth=1
 flags.initDomain(boundaryWidth=bWidth)
 basin = Box( parent=s, p0=gs*Vec3(0,0,0), p1=gs*Vec3(1,0.2,1))
+pball = Sphere( parent=s , center=gs*Vec3(0.5,0.23,0.5), radius=0.02)
+iball = Sphere( parent=s , center=gs*Vec3(0.4,0.7,0.5), radius=res*0.125)
 ball = Sphere( parent=s , center=gs*Vec3(0.5,0.3,0.5), radius=res*0.125)
-#mesh_obj.load("Iphone_seceond_version_finished.obj")
 phi.setConst(1e10)
 phi.join(basin.computeLevelset())
+# phi.join(iball.computeLevelset())
+# phi.join(box.computeLevelset())
 flags.updateFromLevelset(phi)
 sampleLevelsetWithParticles( phi=phi, flags=flags, parts=pp, discretization=2, randomness=0.05 )
-sampleShapeWithParticles(shape=ball, flags=flags, parts=ppControl, discretization=1, randomness=0.47, reset=True)
+# Setup control particle
+# sampleShapeSurfaceWithOneParticle(shape=pball, flags=flags, parts=ppControl, discretization=1, randomness=0.333, reset=True)
+# sampleShapeSurfaceWithParticles(shape=ball, flags=flags, parts=ppControl, discretization=1, randomness=0.333, reset=True)
+sampleShapeWithParticles(shape=ball, flags=flags, parts=ppControl, discretization=1, randomness=0.333, reset=True)
 
 # testing the real channel while resampling - original particles
 # will have a value of 0.1, new particle will get a value from the tstGrid
@@ -96,10 +102,14 @@ for t in range(1000):
 
         # forces & pressure solve
         # no work
-        gridParticleIndex( parts=ppControl , flags=flags, indexSys=pindex, index=gpi )
-        getParticleAttractionForceScaleFactor(parts=ppControl, flags=flags, radius=2.5*mesh_sample_dist, volume=volume, target=ppCScale)
-        addAttractionForce(parts=ppControl, index=gpi, indexSys=pindex, scaleFactor=ppCScale, flags=flags, radius=2.5*mesh_sample_dist, attractionForceStrength=attr_force_strength, vel=vel)
-        setWallBcs(flags=flags, vel=vel)
+        if t%200<100:
+                print("controled")
+                gridParticleIndex( parts=ppControl , flags=flags, indexSys=pindex, index=gpi )
+                getParticleAttractionForceScaleFactor(parts=ppControl, flags=flags, radius=2.5*mesh_sample_dist, volume=volume, target=ppCScale)
+                addAttractionForce(parts=ppControl, index=gpi, indexSys=pindex, scaleFactor=ppCScale, flags=flags, radius=2.5*mesh_sample_dist, attractionForceStrength=attr_force_strength, vel=vel)
+                setWallBcs(flags=flags, vel=vel)
+                solvePressure(flags=flags, vel=vel, pressure=pressure, phi=phi)
+                setWallBcs(flags=flags, vel=vel)
 
         addGravity(flags=flags, vel=vel, gravity=(0,-0.001,0))
         setWallBcs(flags=flags, vel=vel)
