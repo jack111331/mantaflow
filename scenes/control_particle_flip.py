@@ -23,8 +23,8 @@ radiusFactor = 1.0
 # control params
 # TODO fill param
 mesh_sample_dist=1.0
-attr_force_strength=2.0
-vel_force_strength=0.3
+attr_force_strength=3.0 # 2.0
+vel_force_strength=0.2
 volume=1.0
 
 # prepare grids and particles
@@ -36,6 +36,7 @@ velOld = s.create(MACGrid)
 pressure = s.create(RealGrid)
 tmpVec3  = s.create(VecGrid)
 tstGrid  = s.create(RealGrid)
+tmpForce  = s.create(VecGrid)
 
 pp = s.create(BasicParticleSystem)
 pVel = pp.create(PdataVec3)
@@ -49,6 +50,7 @@ gpi    = s.create(IntGrid)
 
 ppControl = s.create(BasicParticleSystem)
 ppCScale = ppControl.create(PdataReal)
+ppCVel = ppControl.create(PdataVec3)
 
 # show up weird
 #mesh_obj = s.create(Mesh)
@@ -103,13 +105,23 @@ for t in range(1000):
         # forces & pressure solve
         # no work
         if t%200<100:
-                print("controled")
+                print("controled attraction force")
                 gridParticleIndex( parts=ppControl , flags=flags, indexSys=pindex, index=gpi )
                 getParticleAttractionForceScaleFactor(parts=ppControl, flags=flags, radius=2.5*mesh_sample_dist, volume=volume, target=ppCScale)
                 addAttractionForce(parts=ppControl, index=gpi, indexSys=pindex, scaleFactor=ppCScale, flags=flags, radius=2.5*mesh_sample_dist, attractionForceStrength=attr_force_strength, vel=vel)
                 setWallBcs(flags=flags, vel=vel)
                 solvePressure(flags=flags, vel=vel, pressure=pressure, phi=phi)
                 setWallBcs(flags=flags, vel=vel)
+
+                if t%100>=50:
+                        # TODO ppCVel need to be update
+                        tmpForce.clear()
+                        circleParticleVelocity(parts=ppControl, velParts=ppCVel, t=t)
+                        genVelocityForce(parts=ppControl, velParts=ppCVel, index=gpi, indexSys=pindex, flags=flags, radius=2.5*mesh_sample_dist, velocityForceStrength=vel_force_strength, vel=vel, force=tmpForce)
+                        applyForceOnVel(flags=flags, vel=vel, force=tmpForce)
+                        setWallBcs(flags=flags, vel=vel)
+                        solvePressure(flags=flags, vel=vel, pressure=pressure, phi=phi)
+                        setWallBcs(flags=flags, vel=vel)
 
         addGravity(flags=flags, vel=vel, gravity=(0,-0.001,0))
         setWallBcs(flags=flags, vel=vel)
@@ -136,5 +148,6 @@ for t in range(1000):
         if saveParts:
                 pp.save( 'flipParts_%04d.uni' % t );
 
-        if 0 and (GUI):
-                gui.screenshot( 'flip02_%04d.png' % t );
+        # if 1 and (GUI):
+        #         gui.screenshot( 'control_particle_%04d.png' % t );
+        gui.screenshot( 'result_vel/control_particle_%04d.png' % t );
