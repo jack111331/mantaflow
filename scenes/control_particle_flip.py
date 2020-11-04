@@ -69,6 +69,10 @@ phi.join(basin.computeLevelset())
 flags.updateFromLevelset(phi)
 sampleLevelsetWithParticles( phi=phi, flags=flags, parts=pp, discretization=2, randomness=0.05 )
 # Setup control particle
+ppControlTest = s.create(BasicParticleSystem)
+testMesh     = s.create(Mesh)
+testMesh.load(name="box_pos.obj")
+sampleMeshWithParticles(mesh=testMesh, flags=flags, parts=ppControlTest, reset=true)
 # sampleShapeSurfaceWithOneParticle(shape=pball, flags=flags, parts=ppControl, discretization=1, randomness=0.333, reset=True)
 # sampleShapeSurfaceWithParticles(shape=ball, flags=flags, parts=ppControl, discretization=1, randomness=0.333, reset=True)
 sampleShapeWithParticles(shape=ball, flags=flags, parts=ppControl, discretization=1, randomness=0.333, reset=True)
@@ -150,4 +154,4 @@ for t in range(1000):
 
         # if 1 and (GUI):
         #         gui.screenshot( 'control_particle_%04d.png' % t );
-        gui.screenshot( 'result_vel/control_particle_%04d.png' % t );
+        # gui.screenshot( 'result_vel/control_particle_%04d.png' % t );

@@ -99,7 +99,7 @@ void sampleShapeSurfaceWithOneParticle(const Shape &shape, const FlagGrid &flags
 }
 
 PYTHON()
-void sampleMeshWithParticles(Mesh &mesh, BasicParticleSystem &parts, const bool reset = false,
+void sampleMeshWithParticles(const Mesh &mesh, const FlagGrid& flags, BasicParticleSystem &parts, const bool reset = false,
                              const int particleFlag = -1) {
     if (reset) {
         parts.clear();
@@ -115,6 +115,28 @@ void sampleMeshWithParticles(Mesh &mesh, BasicParticleSystem &parts, const bool 
             parts.addBuffered(pos, particleFlag);
         }
     }
+    // this may help
+//    applyMeshToGrid()
+    //    FOR_IJK_BND(flags, 0) {
+//        if ( flags.isObstacle(i,j,k) ) continue;
+//        if ( phi(i,j,k) < 1.733 ) {
+//            const Vec3 pos (i,j,k);
+//            for (int dk=0; dk<(is3D ? discretization : 1); dk++)
+//                for (int dj=0; dj<discretization; dj++)
+//                    for (int di=0; di<discretization; di++) {
+//                        Vec3 subpos = pos + disp * Vec3(0.5+di, 0.5+dj, 0.5+dk);
+//                        subpos += jlen * (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+//                        if(!is3D) subpos[2] = 0.5;
+//                        if( phi.getInterpolated(subpos) > 0. ) continue;
+//                        if(particleFlag < 0){
+//                            parts.addBuffered(subpos);
+//                        }
+//                        else{
+//                            parts.addBuffered(subpos, particleFlag);
+//                        }
+//                    }
+//        }
+//    }
 
     parts.insertBufferedParticles();
 }
