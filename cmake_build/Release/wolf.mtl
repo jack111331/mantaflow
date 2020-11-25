@@ -1,0 +1,56 @@
+# Blender MTL File: 'None'
+# Material Count: 5
+
+newmtl Wolf_1
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:\\Users\\Edge\\AppData\\Local\\Temp\\Temp1_76-wolf-blender-2.82a.zip\\textures\\Material__wolf_col_tga_diffuse.jpeg
+
+newmtl Wolf_Eyes
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:\\Users\\Edge\\AppData\\Local\\Temp\\Temp1_76-wolf-blender-2.82a.zip\\textures\\eyes_diffuse.jpeg
+
+newmtl Wolf_Fur
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:\\Users\\Edge\\AppData\\Local\\Temp\\Temp1_76-wolf-blender-2.82a.zip\\textures\\Fur_Col_20.png
+map_d C:\\Users\\Edge\\AppData\\Local\\Temp\\Temp1_76-wolf-blender-2.82a.zip\\textures\\Fur_Alpha_3.png
+
+newmtl Wolf_Teeth
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.226079 0.232427 0.188315
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl Wolf_claws
+Ns 3.644628
+Ka 0.300000 0.300000 0.300000
+Kd 0.140521 0.140521 0.140521
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3

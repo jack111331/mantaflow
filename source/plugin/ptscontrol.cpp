@@ -16,8 +16,9 @@
 #include "particle.h"
 #include "kernel.h"
 #include "shapes.h"
+#include "BVH.h"
 
-const int PC_DEBUGLEVEL = 1;
+static const int PC_DEBUGLEVEL = 1;
 
 using namespace std;
 namespace Manta {
@@ -99,7 +100,7 @@ void sampleShapeSurfaceWithOneParticle(const Shape &shape, const FlagGrid &flags
 }
 
 PYTHON()
-void sampleMeshWithParticles(const Mesh &mesh, const FlagGrid& flags, BasicParticleSystem &parts, const bool reset = false,
+void sampleMeshWithParticles(Mesh &mesh, const FlagGrid& flags, BasicParticleSystem &parts, const bool reset = false,
                              const int particleFlag = -1) {
     if (reset) {
         parts.clear();
@@ -107,7 +108,7 @@ void sampleMeshWithParticles(const Mesh &mesh, const FlagGrid& flags, BasicParti
     }
 
     for (IndexInt i = 0; i < mesh.numNodes(); ++i) {
-        Node &node = mesh.nodes(i);
+        const Node node = mesh.nodes(i);
         const Vec3 &pos = node.pos;
         if (particleFlag < 0) {
             parts.addBuffered(pos);
@@ -138,6 +139,31 @@ void sampleMeshWithParticles(const Mesh &mesh, const FlagGrid& flags, BasicParti
 //        }
 //    }
 
+    parts.insertBufferedParticles();
+}
+
+PYTHON()
+void sampleMeshBVHWithParticles(const MeshBVH &mesh, const FlagGrid& flags, BasicParticleSystem &parts, const bool reset = false,
+                             const int particleFlag = -1) {
+    if (reset) {
+        parts.clear();
+        parts.doCompress();
+    }
+
+    RandomStream mRand(9832);
+    int sampleAmount = 5;
+    Vec3 minBound = mesh.getMinBound(), maxBound = mesh.getMaxBound();
+    for(int k = minBound.z; k <= maxBound.z; ++k)
+    for(int j = minBound.y; j <= maxBound.y; ++j)
+    for(int i = minBound.x; i <= maxBound.x; ++i) {
+        Vec3 pos(i, j, k);
+        for(int di = 0; di < sampleAmount; ++di) {
+            Vec3 subpos = pos + (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+            if(mesh.isInsideMesh(subpos)) {
+                parts.addBuffered(subpos);
+            }
+        }
+    }
     parts.insertBufferedParticles();
 }
 
@@ -309,4 +335,73 @@ PYTHON()
 void circleParticleVelocity(BasicParticleSystem &parts, ParticleDataImpl <Vec3> &velParts, float t) {
     KnCircleParticleVelocity(parts, velParts, t);
 }
+
+KERNEL(pts)
+void KnComputeSmoothedFluidVelocityParticle(const BasicParticleSystem &parts, const FlagGrid &flags, const Grid <Vec3> &vel, const Real radius,
+                                    ParticleDataImpl <Vec3> &target) {
+    const Vec3 &pos = parts.getPos(idx);
+    target[idx] = Vec3(0.0);
+    int r = int(radius) + 1;
+    int rZ = flags.is3D() ? r : 0;
+    Real totalWeight = 0.0;
+    for (int zj = pos[2] - rZ; zj <= pos[2] + rZ; zj++)
+    for (int yj = pos[1] - r; yj <= pos[1] + r; yj++)
+    for (int xj = pos[0] - r; xj <= pos[0] + r; xj++) {
+        if (flags.isInBounds(Vec3i(xj, yj, zj)) && flags.isFluid(xj, yj, zj)) {
+            Real weight = getNormalizedSpline(norm(Vec3(xj, yj, zj) - pos), radius);
+            target[idx] += weight * vel.get(xj, yj, zj);
+            totalWeight += weight;
+        }
+    }
+    if (totalWeight >= 1e-6) {
+        target[idx] /= totalWeight;
+    }
+}
+
+PYTHON()
+void computeSmoothedFluidVelocityParticle(const BasicParticleSystem& parts, const FlagGrid& flags, const Grid <Vec3>& vel, const Real radius,
+    ParticleDataImpl <Vec3>& target) {
+    KnComputeSmoothedFluidVelocityParticle(parts, flags, vel, radius, target);
+}
+
+KERNEL()
+void KnComputeSmoothedFluidVelocity(const BasicParticleSystem &parts, const FlagGrid &flags, const Grid<int> &index, const ParticleIndexSystem &indexSys,
+        const ParticleDataImpl <Vec3> &partVel, const Real radius, Grid <Vec3> &target) {
+    if (!flags.isFluid(i, j, k)) return;
+// FIXME change code
+    Vec3 cellPos = Vec3(i, j, k);
+    int r = int(1. * radius) + 1;
+    int rZ = flags.is3D() ? r : 0;
+    Real totalWeight = 0.0;
+
+    for (int zj = k - rZ; zj <= k + rZ; zj++)
+    for (int yj = j - r; yj <= j + r; yj++)
+    for (int xj = i - r; xj <= i + r; xj++) {
+        if (!flags.isInBounds(Vec3i(xj, yj, zj))) continue;
+
+        IndexInt isysIdxS = index.index(xj, yj, zj);
+        IndexInt pStart = index(isysIdxS), pEnd = 0;
+        if (flags.isInBounds(isysIdxS + 1)) pEnd = index(isysIdxS + 1);
+        else pEnd = indexSys.size();
+
+        // now loop over particles in cell
+        for (IndexInt p = pStart; p < pEnd; ++p) {
+            const int psrc = indexSys[p].sourceIndex;
+            const Vec3 pos = parts[psrc].pos;
+            Real weight = getNormalizedSpline(norm(cellPos - pos), radius);
+            totalWeight += weight;
+            target(i, j, k) += partVel[psrc] * weight;
+        }
+    }
+    if (totalWeight >= 1e-6) {
+        target(i, j, k) /= totalWeight;
+    }
+}
+
+PYTHON()
+void computeSmoothedFluidVelocity(const BasicParticleSystem& parts, const FlagGrid& flags, const Grid<int>& index, const ParticleIndexSystem& indexSys,
+    const ParticleDataImpl <Vec3>& partVel, const Real radius, Grid <Vec3>& target) {
+    KnComputeSmoothedFluidVelocity(parts, flags, index, indexSys, partVel, radius, target);
+}
+
 } // end namespace

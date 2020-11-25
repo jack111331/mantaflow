@@ -143,7 +143,7 @@ public:
     
     // plugins
     PYTHON() void clear();
-    PYTHON() void load (std::string name, bool append = false);
+    PYTHON() virtual void load (std::string name, bool append = false);
     PYTHON() void fromShape (Shape& shape, bool append = false);
     PYTHON() void save (std::string name);
     PYTHON() void advectInGrid(FlagGrid& flags, MACGrid& vel, int integrationMode);

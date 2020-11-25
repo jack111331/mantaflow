@@ -214,6 +214,7 @@ set(PP_SOURCES
 	source/plugin/waves.cpp
 	source/plugin/ptscontrol.cpp
 	#source/plugin/sph.cpp
+	source/BVH.cpp
 	source/python/defines.py
 	source/test.cpp
 )
@@ -240,6 +241,7 @@ set(PP_HEADERS
 	source/edgecollapse.h
 	source/vortexpart.h
 	source/turbulencepart.h
+	source/BVH.h
 )
 
 # no pre-processing needed

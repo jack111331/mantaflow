@@ -1,0 +1,6 @@
+#include "BVH.h"
++MeshBVH^ static const Pb::Register _R_$IDX$ ("MeshBVH","MeshBVH","Mesh"); template<> const char* Namify<MeshBVH >::S = "MeshBVH"; 
+>MeshBVH^
++MeshBVH^ static const Pb::Register _R_$IDX$ ("MeshBVH","MeshBVH",MeshBVH::_W_0); 
++MeshBVH^ static const Pb::Register _R_$IDX$ ("MeshBVH","load",MeshBVH::_W_1); 
++MeshBVH^ static const Pb::Register _R_$IDX$ ("MeshBVH","isInsideMesh",MeshBVH::_W_2); 
